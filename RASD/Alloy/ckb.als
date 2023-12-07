@@ -21,9 +21,11 @@ sig Educator extends User{
 //Students can participate in tournaments and in battles through teams
 sig Student extends User{
 	tournaments: set Tournament,
-	teams: set Team,
-	battles: set Battle
+	battles: set Battle,
+	teams: set Team
+	
 }
+
 
 //Battles have some parameters that need to be inserted by the creator, these parameters must respect the following constraints:
 //	- The number of minimum students per team must be less or equal than the maximum number of students (and it should be greateo or equal than 1)
@@ -41,8 +43,10 @@ sig Battle{
 	var subscribedTeams: set Team,
 	var status: one Status,
 	description: one String,
-	var ranking : Student -> Score
+	var ranking : Student -> Int 
 }{
+// The score must be an int between 0 and 100
+  all s: Student | ranking[s] >= 0 and ranking[s] <= 100
 	minPerGroup <= maxPerGroup
 	minPerGroup>=1
 	maxPerGroup<=sub_students
@@ -62,27 +66,59 @@ sig Tournament{
 	var battles: set Battle
 	var students: set Student
 	var status: one Status
-	var ranking : Student -> Score
+	var ranking : Student -> Int
 }{
+// To impose positivity to the score
+  	all s: Student | ranking[s] >= 0 	
 	creator in managers
 
 }
 
+
+
 //Teams are composed of students and participate to battles, providing solutions
 sig Team{
 	members: some Student
-	battles: some Battle //perchè some? Anche se in un'altra battaglia si forma una squadra con le stesse persone dobbiamo comunque considerarlo un team diverso...
+	battle: one Battle 
 	solutions: set Solution
+	
 }
 
 //Teams provide solutions to the problems posed during battles, these solutions get automatically evaluated by the system
 sig Solution{
-	team: one Team
-	battle: one Battle
+	team: one Team,
+	battle: one Battle,
 	var score: one Int
 }{
-	score >= 0 and score <= 100
+//fact	
+score >= 0 and score <= 100
 }
 
 //Represents the status of a battle or a tournament
 enum Status {Created, Ongoing, Closed}
+
+
+FACTS
+//A student can participate in a battle in only one team
+fact NoOverlappingTeams{
+all disj s1, s2: Student, t1, t2: Team | 
+    (s1 in t1.members and s2 in t2.members and t1.battle = t2.battle ) implies t1 = t2
+}
+
+fact UniqueTournamentNames {
+  all disj t1, t2: Tournament | t1.name != t2.name
+}
+
+fact UniqueBattleNamesPerTournament {
+  all t: Tournament |
+    all disj b1, b2: t.battles | b1.name != b2.name
+}
+fact SolutionScoreRange {
+  all sol: Solution | sol.score >= 0 and sol.score <= 100
+}
+fact TeamMembershipLimit {
+  all t: Team | 
+      #t.members >= t.battle.minPerGroup and #t.members <= t.battle.maxPerGroup
+}
+
+// dobbiamo garantire la coerenza del triangolo solutions, team, battle
