@@ -218,5 +218,6 @@ fact battleStatus{
 		(b.status = Ongoing implies once startBattle[b]) and
 		(b.status = Ongoing implies eventually b.status = Closed) and
 		(b.status = Closed implies once startBattle[b])
+}
 		(b.status = Closed implies once closeBattle[b])
 		(b.status = Closed implies after always b.status = Closed)
