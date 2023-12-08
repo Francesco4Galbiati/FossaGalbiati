@@ -16,14 +16,17 @@ sig Educator extends User{
 	var battlesCreated: set Battle,
 	var tournamentsCreated: set Tournament,
 	var tournamentsManaged: set Tournament
+}{
+#tournamentsManaged>=#tournamentsCreated
 }
-
 //Students can participate in tournaments and in battles through teams
 sig Student extends User{
 	var tournaments: set Tournament,
 	var battles: set Battle,
 	var teams: set Team
 	
+}{
+#battles=#temas
 }
 
 
@@ -44,6 +47,11 @@ sig Battle{
 	var status: one Status,
 	var ranking : Student -> Int 
 }{
+minPerGroup * #subscribedTeams <= sub_students,
+sub_students <= maxPerGroup * #subscribedTeams
+sub_students= sum t: subscribedTeams | #t.members
+#ranking=sub_students
+
 // The score must be an int between 0 and 100
   all s: Student | ranking[s] >= 0 and ranking[s] <= 100
 	minPerGroup <= maxPerGroup
@@ -70,7 +78,7 @@ sig Tournament{
 // To impose positivity to the score
   	all s: Student | ranking[s] >= 0 	
 	creator in managers
-
+	
 }
 
 
@@ -162,4 +170,8 @@ fact StudentScoreInTournament {
     all t: Tournament, s: Student | 
         s in t.students implies 
             t.ranking[s] = sum b: t.battles | b.ranking[s] | b in s.battles
+}
+fact StudentsInTournamentsAndBattles{
+all t: Tournament, b: Battle | b in t.battles| 
+#t.students >= b.sub_students
 }
