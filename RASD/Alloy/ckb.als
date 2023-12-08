@@ -111,6 +111,7 @@ fact UniqueBattleNamesPerTournament {
   all t: Tournament |
     all disj b1, b2: Battle | b1, b2 in t.battles | b1.name != b2.name
 }
+
 fact SolutionScoreRange {
   all sol: Solution | sol.score >= 0 and sol.score <= 100
 }
@@ -118,13 +119,40 @@ fact TeamMembershipLimit {
   all t: Team | 
       #t.members >= t.battle.minPerGroup and #t.members <= t.battle.maxPerGroup
 }
+
 fact UsernamenUnicity{
 all disj u1, u2: User | u1.u_id!=u2_u_id and u1.email!=u2.email
 }
+
 fact TeamCoherenceInBattleAndSolution{
 all disj b: Battle, s: Solution, t: Team| s.battle=b and s.team=t implies t in b.subscribedTeams and t.battle=b and s in t.solutions 
 }
 
+fact teamSubscribedToTournament{
+	all s: Student, tm: Team, tr: Tournament | 
+		((s in tm.members) and (tm in tr.battles)) implies
+			(s in tr.students)
+}
 
+fact battleCreatorIsManager{
+	all e: Educator, b: Battle, t: Tournament |
+		((b.creator = e) and (b in t.battles)) implies
+			(e in t.managers)
+}
 
-// dobbiamo garantire la coerenza del triangolo solutions, team, battle
+fact educatorConsistency{
+	all e: Educator, t: Tournament |
+		(e = t.creator iff t in e.tournamentsCreated) and
+		(e in t.managers iff t in e.tournamentsManaged)
+	all e: Educator, b:Battle |
+		(e = b.creator iff b in e.battlesCreated)
+}
+
+fact studentConsistency{
+	all s: Student, t: Tournament |
+		(s in t.students iff t in s.tournaments)
+	all s: Student, t: Team |
+		(s in t.members iff t in s.teams)
+	all s: Student, b: Battle, t: Team |
+		(b in s.battles iff (s in t.members and t in b.teams))
+}
