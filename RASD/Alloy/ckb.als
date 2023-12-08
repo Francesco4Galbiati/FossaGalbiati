@@ -126,6 +126,40 @@ pred closeBattle[b: Battle]{
 	b.status = Ongoing
 	b.status' = Closed
 }
+pred IsEnrolled(student: Student, tournament: Tournament) {
+ student not in tournament.students 
+ tournament.students' = tournament.students + student
+	tournament.status = Created
+  tournament not in student.tournaments
+ student.tournaments'=student.tournaments+tournament
+
+}
+
+pred TeamJoinsBattle[team: Team, battle: Battle] {
+    battle.status = Created
+    (all student: Student | student in team.members  implies student in battle.tournament.students) 
+    team not in battle.subscribedTeams 
+   battle.subscribedTeams'=battle.subscribedTeams+team
+    battle.sub_students'=battle.sub_students+#teams.members
+(all student: Student | student in team.members battle not in student.battles )
+(all student: Student | student in team.members implies student.battles'=student.battles+team.members )
+}
+pred AddManagerToTournament[newManager: Educator, tournament: Tournament] {
+    newManager not in tournament.managers
+    tournament.managers' = tournament.managers + newManager
+tournament not in newManager.tournamentsManaged
+newManager.tournamentsManaged'=newManager.tournamentsManaged+tournament
+
+}
+
+pred RemoveManagerFromTournament[managerToRemove: Educator, tournament: Tournament] {
+    managerToRemove in tournament.managers
+    tournament.managers' = tournament.managers - managerToRemove
+tournament  in managerToRemove.tournamentsManaged
+managerToRemove.tournamentsManaged'=managerToRemove.tournamentsManaged-tournament
+
+    
+}
 
 FACTS
 //A student can participate in a battle in only one team
@@ -221,3 +255,5 @@ fact battleStatus{
 }
 		(b.status = Closed implies once closeBattle[b])
 		(b.status = Closed implies after always b.status = Closed)
+}
+
