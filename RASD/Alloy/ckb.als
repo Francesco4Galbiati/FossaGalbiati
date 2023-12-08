@@ -126,7 +126,7 @@ pred closeBattle[b: Battle]{
 	b.status = Ongoing
 	b.status' = Closed
 }
-pred IsEnrolled(student: Student, tournament: Tournament) {
+pred enrollStudent(student: Student, tournament: Tournament) {
  student not in tournament.students 
  tournament.students' = tournament.students + student
 	tournament.status = Created
