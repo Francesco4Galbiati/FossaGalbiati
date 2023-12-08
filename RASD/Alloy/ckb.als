@@ -252,8 +252,28 @@ fact battleStatus{
 		(b.status = Ongoing implies once startBattle[b]) and
 		(b.status = Ongoing implies eventually b.status = Closed) and
 		(b.status = Closed implies once startBattle[b])
-}
 		(b.status = Closed implies once closeBattle[b])
 		(b.status = Closed implies after always b.status = Closed)
 }
 
+fact managerOnceAdded{
+	all e: Educator, t: Tournament |
+		e in t.managers implies once AddManagerToTournament[e, t]
+}
+
+fact notManagerRemovedOrNeverAdded{
+	all e: Educator, t: Tournament |
+		e not in t.managers implies
+			(once removeManagerFromTournament[e, t] or
+			 historically e not in t.managers)
+}
+
+fact studentOnceEnrolled{
+	all s: Student, t: Tournament |
+		s in t.students implies once enrollStudent[s, t]
+}
+
+fact teamOnceSubscribed{
+	all t: Team, b: Battle |
+		t in b.subscribedTeams implies once teamJoinsBattle[t, b]
+}
