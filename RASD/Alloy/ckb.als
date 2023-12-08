@@ -178,14 +178,14 @@ fact StudentsInTournamentsAndBattles{
 
 fact battleStatus{
 	all b: Battle | always 
-		(b.status = Created implies eventually (b.status = Ongoing and b.status = Closed)) and
-		(b.status = Ongoing implies (once b.status = Created) and (eventually b.status = Closed)) and
-		(b.status = Closed implies once (b.status = Created and b.status = Ongoing)
+		(b.status = Created implies (eventually b.status = Ongoing) and (eventually b.status = Closed)) and
+		(b.status = Ongoing implies (historically b.status = Created) and (eventually b.status = Closed)) and
+		(b.status = Closed implies (once b.status = Created) and (once b.status = Ongoing)
 }
 
 fact tournamentStatus{
-	all b: Tournament | always 
-		(t.status = Created implies eventually (t.status = Ongoing and t.status = Closed)) and
-		(t.status = Ongoing implies (once t.status = Created) and (eventually t.status = Closed)) and
-		(t.status = Closed implies once (t.status = Created and t.status = Ongoing)
+	all t: Tournament | always 
+		(t.status = Created implies (eventually t.status = Ongoing) and (eventually t.status = Closed)) and
+		(t.status = Ongoing implies (historically t.status = Created) and (eventually t.status = Closed)) and
+		(t.status = Closed implies (once t.status = Created) and (once t.status = Ongoing)
 }
