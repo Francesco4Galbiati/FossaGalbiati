@@ -160,5 +160,5 @@ fact studentConsistency{
 fact StudentScoreInTournament {
     all t: Tournament, s: Student | 
         s in t.students implies 
-            t.ranking[s] = sum (all b: t.battles  | b.ranking[s] | b in s.battles )
+            t.ranking[s] = sum b: t.battles | b.ranking[s] | b in s.battles
 }
