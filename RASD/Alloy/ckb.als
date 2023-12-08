@@ -14,8 +14,8 @@ sig Date{
 //Educators are the users that can create and manage battles and tournaments
 sig Educator extends User{
 	battlesCreated: set Battle,
-	tournamentCreated: set Tournament,
-	tournamentManaged: set Tournament
+	tournamentsCreated: set Tournament,
+	tournamentsManaged: set Tournament
 }
 
 //Students can participate in tournaments and in battles through teams
@@ -42,7 +42,6 @@ sig Battle{
 	tournament: one Tournament,
 	var subscribedTeams: set Team,
 	var status: one Status,
-	description: one String,
 	var ranking : Student -> Int 
 }{
 // The score must be an int between 0 and 100
@@ -90,8 +89,7 @@ sig Solution{
 	battle: one Battle,
 	var score: one Int
 }{
-//fact	
-score >= 0 and score <= 100
+
 }
 
 //Represents the status of a battle or a tournament
@@ -101,8 +99,8 @@ enum Status {Created, Ongoing, Closed}
 FACTS
 //A student can participate in a battle in only one team
 fact NoOverlappingTeams{
-all disj s1, s2: Student, t1, t2: Team | 
-    (s1 in t1.members and s2 in t2.members and t1.battle = t2.battle ) implies t1 = t2
+all s1: Student, t1, t2: Team | 
+    (s1 in t1.members and s1 in t2.members and t1.battle = t2.battle ) implies t1 = t2
 }
 
 fact UniqueTournamentNames {
@@ -111,7 +109,7 @@ fact UniqueTournamentNames {
 
 fact UniqueBattleNamesPerTournament {
   all t: Tournament |
-    all disj b1, b2: t.battles | b1.name != b2.name
+    all disj b1, b2: Battle | b1, b2 in t.battles | b1.name != b2.name
 }
 fact SolutionScoreRange {
   all sol: Solution | sol.score >= 0 and sol.score <= 100
@@ -120,5 +118,13 @@ fact TeamMembershipLimit {
   all t: Team | 
       #t.members >= t.battle.minPerGroup and #t.members <= t.battle.maxPerGroup
 }
+fact UsernamenUnicity{
+all disj u1, u2: User | u1.u_id!=u2_u_id and u1.email!=u2.email
+}
+fact TeamCoherenceInBattleAndSolution{
+all disj b: Battle, s: Solution, t: Team| s.battle=b and s.team=t implies t in b.subscribedTeams and t.battle=b and s in t.solutions 
+}
+
+
 
 // dobbiamo garantire la coerenza del triangolo solutions, team, battle
