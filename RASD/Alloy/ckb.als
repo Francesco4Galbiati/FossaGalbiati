@@ -209,3 +209,14 @@ fact tournamentStatus{
 		(t.status = Closed implies once closeTournament[t])
 		(t.status = Closed implies after always t.status = Closed)
 }
+
+fact battleStatus{
+	all b: Battles |
+		(b.status = Created implies historically b.status = Created) and
+		(b.status = Created implies eventually b.status = Ongoing) and
+		(b.status = Created implies eventually b.status = Closed) and
+		(b.status = Ongoing implies once startBattle[b]) and
+		(b.status = Ongoing implies eventually b.status = Closed) and
+		(b.status = Closed implies once startBattle[b])
+		(b.status = Closed implies once closeBattle[b])
+		(b.status = Closed implies after always b.status = Closed)
