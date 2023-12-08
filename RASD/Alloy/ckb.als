@@ -13,16 +13,16 @@ sig Date{
 
 //Educators are the users that can create and manage battles and tournaments
 sig Educator extends User{
-	battlesCreated: set Battle,
-	tournamentsCreated: set Tournament,
-	tournamentsManaged: set Tournament
+	var battlesCreated: set Battle,
+	var tournamentsCreated: set Tournament,
+	var tournamentsManaged: set Tournament
 }
 
 //Students can participate in tournaments and in battles through teams
 sig Student extends User{
-	tournaments: set Tournament,
-	battles: set Battle,
-	teams: set Team
+	var tournaments: set Tournament,
+	var battles: set Battle,
+	var teams: set Team
 	
 }
 
@@ -35,7 +35,7 @@ sig Battle{
 	name: one String,
 	maxPerGroup: one Int,
 	minPerGroup: one Int,
-	sub_students: one Int,
+	var sub_students: one Int,
 	registrationDeadline: one Date,
 	submissionDeadline: one Date,
 	creator: one Educator,
@@ -79,7 +79,7 @@ sig Tournament{
 sig Team{
 	members: some Student
 	battle: one Battle 
-	solutions: set Solution
+	var solutions: set Solution
 	
 }
 
@@ -87,9 +87,10 @@ sig Team{
 sig Solution{
 	team: one Team,
 	battle: one Battle,
-	var score: one Int
+	score: one Int
 }{
-
+ score>=0,
+ score<=100
 }
 
 //Represents the status of a battle or a tournament
