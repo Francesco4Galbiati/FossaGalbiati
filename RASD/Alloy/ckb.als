@@ -104,6 +104,28 @@ sig Solution{
 //Represents the status of a battle or a tournament
 enum Status {Created, Ongoing, Closed}
 
+PREDICATES
+
+
+pred startTournament[t: Tournament]{
+	t.status = Created
+	t.status' = Ongoing
+}
+
+pred closeTournament[t: Tournament]{
+	t.status = Ongoing
+	t.status' = Closed
+}
+
+pred startBattle[b: Battle]{
+	b.status = Created
+	b.status' = Ongoing
+}
+
+pred closeBattle[b: Battle]{
+	b.status = Ongoing
+	b.status' = Closed
+}
 
 FACTS
 //A student can participate in a battle in only one team
@@ -174,4 +196,16 @@ fact StudentScoreInTournament {
 fact StudentsInTournamentsAndBattles{
 	all t: Tournament, b: Battle | b in t.battles| 
 	#t.students >= b.sub_students
+}
+
+fact tournamentStatus{
+	all t: Tournament |
+		(t.status = Created implies historically t.status = Created) and
+		(t.status = Created implies eventually t.status = Ongoing) and
+		(t.status = Created implies eventually t.status = Closed) and
+		(t.status = Ongoing implies once startTournament[t]) and
+		(t.status = Ongoing implies eventually t.status = Closed) and
+		(t.status = Closed implies once startTournament[t])
+		(t.status = Closed implies once closeTournament[t])
+		(t.status = Closed implies after always t.status = Closed)
 }
