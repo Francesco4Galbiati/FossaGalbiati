@@ -156,3 +156,11 @@ fact studentConsistency{
 	all s: Student, b: Battle, t: Team |
 		(b in s.battles iff (s in t.members and t in b.teams))
 }
+
+fact StudentScoreInTournament {
+    all t: Tournament, s: Student | 
+        s in t.students implies 
+            t.ranking[s] = sum (all b: t.battles  | b.ranking[s] | b in s.battles )
+                
+            )
+}
