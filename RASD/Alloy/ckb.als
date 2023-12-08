@@ -175,17 +175,3 @@ fact StudentsInTournamentsAndBattles{
 	all t: Tournament, b: Battle | b in t.battles| 
 	#t.students >= b.sub_students
 }
-
-fact battleStatus{
-	all b: Battle | always 
-		(b.status = Created implies (eventually b.status = Ongoing) and (eventually b.status = Closed)) and
-		(b.status = Ongoing implies (historically b.status = Created) and (eventually b.status = Closed)) and
-		(b.status = Closed implies (once b.status = Created) and (once b.status = Ongoing)
-}
-
-fact tournamentStatus{
-	all t: Tournament | always 
-		(t.status = Created implies (eventually t.status = Ongoing) and (eventually t.status = Closed)) and
-		(t.status = Ongoing implies (historically t.status = Created) and (eventually t.status = Closed)) and
-		(t.status = Closed implies (once t.status = Created) and (once t.status = Ongoing)
-}
