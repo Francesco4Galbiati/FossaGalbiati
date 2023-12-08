@@ -26,7 +26,7 @@ sig Student extends User{
 	var teams: set Team
 	
 }{
-#battles=#temas
+	#battles=#teams
 }
 
 
@@ -172,6 +172,20 @@ fact StudentScoreInTournament {
             t.ranking[s] = sum b: t.battles | b.ranking[s] | b in s.battles
 }
 fact StudentsInTournamentsAndBattles{
-all t: Tournament, b: Battle | b in t.battles| 
-#t.students >= b.sub_students
+	all t: Tournament, b: Battle | b in t.battles| 
+	#t.students >= b.sub_students
+}
+
+fact battleStatus{
+	all b: Battle | always 
+		(b.status = Created implies eventually (b.status = Ongoing and b.status = Closed)) and
+		(b.status = Ongoing implies (once b.status = Created) and (eventually b.status = Closed)) and
+		(b.status = Closed implies once (b.status = Created and b.status = Ongoing)
+}
+
+fact tournamentStatus{
+	all b: Tournament | always 
+		(t.status = Created implies eventually (t.status = Ongoing and t.status = Closed)) and
+		(t.status = Ongoing implies (once t.status = Created) and (eventually t.status = Closed)) and
+		(t.status = Closed implies once (t.status = Created and t.status = Ongoing)
 }
