@@ -50,7 +50,7 @@ sig Battle{
 	//this facts ensure consistency between the attributeds regarding the subscribed students
 	mul[minPerGroup, #subscribedTeams] <= sub_students
 	sub_students <= mul[maxPerGroup, #subscribedTeams]
-	sub_students = sum t: subscribedTeams | #t.members
+	
 	#ranking = sub_students
 	minPerGroup <= maxPerGroup
 	maxPerGroup <= sub_students
@@ -69,13 +69,13 @@ sig Battle{
 
 //Tournaments have a creator and a set of managers, in particular the creator of a tournament must always be part of the managers
 sig Tournament{
-	name: one String
-	registrationDeadline: one Date
-	creator: one Educator
-	var managers: some Educator
-	var battles: set Battle
-	var students: set Student
-	var status: one Status
+	name: one String,
+	registrationDeadline: one Date,
+	creator: one Educator,
+	var managers: some Educator,
+	var battles: set Battle,
+	var students: set Student,
+	var status: one Status,
 	var ranking : Student -> Int
 }{
 	//The score must be greater or equal than 0
@@ -87,9 +87,9 @@ sig Tournament{
 
 //Teams are composed of students and participate to battles, providing solutions
 sig Team{
-	members: some Student
-	battle: one Battle 
-	var solutions: set Solution
+	members: some Student,
+	battle: one Battle,
+	var solutions: set Solution,
 }
 
 //Teams provide solutions to the problems posed during battles, these solutions get automatically evaluated by the system
@@ -110,18 +110,18 @@ enum Status {Created, Ongoing, Closed}
 
 //An educator can create a tournament
 pred createTournament[e: Educator, t: Tournament]{
-	no t2: Tournament | t2 != t1 implies t2.name = t.name
+	no t2: Tournament | t2 != t implies t2.name = t.name
 	t.status = Created
 	t.creator = e
 	e in t.managers
 	t.battles = none
 	t.students = none
-	ranking = none
+	//ranking = none
 
-	t not in e.createdTournaments
-	t in e.createdTournaments'
-	t not in e.managedTournaments
-	t in e.managedTournaments'
+	t not in e.tournamentsCreated
+	t in e.tournamentsCreated'
+	t not in e.tournamentsManaged
+	t in e.tournamentsManaged'
 }
 
 //An educator can create a battle for a tournament
@@ -132,12 +132,12 @@ pred createBattle[e: Educator, b: Battle, t: Tournament]{
 	b in t.battles
 	t = b.tournament
 	e in t.managers
-	t in e.managedTournaments
+	t in e.tournamentsManaged
 	b.subscribedTeams = none
-	b.ranking = none
+	//b.ranking = none
 
-	b not in e.createdBattles
-	b in e.createdBattles'
+	b not in e.battlesCreated
+	b in e.battlesCreated'
 }
 
 //After the registration deadline, the tournament starts
@@ -216,7 +216,7 @@ fact UniqueTournamentNames {
 //There cannot be two battles with the same name in a single tournament
 fact UniqueBattleNamesPerTournament {
   	all t: Tournament | all disj b1, b2: Battle | 
-		b1, b2 in t.battles implies b1.name != b2.name
+		(b1 in t.battles and b2 in t.battles) implies b1.name != b2.name
 }
 
 //Every team taking part to a battle must have its number of members between the upper and lower bounds of the battle
@@ -227,7 +227,7 @@ fact TeamMembershipLimit {
 
 //There cannot be two users with the same name
 fact UsernamenUnicity{
-	all disj u1, u2: User | u1.u_id != u2_u_id and u1.email != u2.email
+	all disj u1, u2: User | u1.u_id != u2.u_id and u1.email != u2.email
 }
 
 //If a team presents a solution for a battle, that team must be part of the battle
@@ -270,14 +270,14 @@ fact studentConsistency{
 	all s: Student, t: Team |
 		(s in t.members iff t in s.teams)
 	all s: Student, b: Battle|
-		(b in s.battles iff (one t: Team | s in t.members and t in b.teams))
+		(b in s.battles iff (one t: Team | s in t.members and t in b.subscribedTeams))
 }
 
 //The score of a student in a tournament is the sum of the scores of that student in all the battles of the tournament
 fact StudentScoreInTournament {
     all t: Tournament, s: Student | 
         s in t.students implies 
-            t.ranking[s] = sum b: t.battles | b.ranking[s] | b in s.battles
+            t.ranking[s] = (sum b: (t.battles & s.battles) | b.ranking[s])
 }
 
 //A battle in a tournament must have a number of participants smaller or equal than the number of participants in the tournament
@@ -302,7 +302,7 @@ fact tournamentStatus{
 
 //Models the status evolution of a battle
 fact battleStatus{
-	all b: Battles |
+	all b: Battle |
 		(b.status = Created implies (once createBattle[b.creator, b, b.tournament])) and
 		(b.status = Created implies historically b.status = Created) and
 		(b.status = Created implies eventually b.status = Ongoing) and
@@ -324,7 +324,7 @@ fact managerOnceAdded{
 fact notManagerRemovedOrNeverAdded{
 	all e: Educator, t: Tournament |
 		e not in t.managers implies
-			(once removeManagerFromTournament[e, t] or
+			(once RemoveManagerFromTournament[e, t] or
 			 historically e not in t.managers)
 }
 
@@ -337,5 +337,10 @@ fact studentOnceEnrolled{
 //If a team is taking part in a battle, then it must have been subscribed at some point in time
 fact teamOnceSubscribed{
 	all t: Team, b: Battle |
-		t in b.subscribedTeams implies once teamJoinsBattle[t, b]
+		t in b.subscribedTeams implies once TeamJoinsBattle[t, b]
+}
+
+fact subscribedStudentsCardinality{
+	all t: Tournament |
+		#t.students = (sum tm: t.battles.subscribedTeams | #tm.members)
 }
