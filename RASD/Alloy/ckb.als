@@ -1,7 +1,7 @@
 //Abstract signature for users
 abstract sig User {
-u_id : one Int,
-email : one String
+	u_id : one Int,
+	email : one String
 }
 
 //Used to represent an instance of time, for simplicity is limited to date, but it could be extended to DateTime
@@ -17,8 +17,9 @@ sig Educator extends User{
 	var tournamentsCreated: set Tournament,
 	var tournamentsManaged: set Tournament
 }{
-#tournamentsManaged>=#tournamentsCreated
+	#tournamentsManaged>=#tournamentsCreated
 }
+
 //Students can participate in tournaments and in battles through teams
 sig Student extends User{
 	var tournaments: set Tournament,
@@ -32,8 +33,7 @@ sig Student extends User{
 
 //Battles have some parameters that need to be inserted by the creator, these parameters must respect the following constraints:
 //	- The number of minimum students per team must be less or equal than the maximum number of students (and it should be greateo or equal than 1)
-//  - The registration deadline must be before the submission one
-//In the signature are also specified the scoring parameters and the test cases and //?
+//  	- The registration deadline must be before the submission one
 sig Battle{
 	name: one String,
 	maxPerGroup: one Int,
@@ -47,21 +47,21 @@ sig Battle{
 	var status: one Status,
 	var ranking : Student -> Int 
 }{
-minPerGroup * #subscribedTeams <= sub_students,
-sub_students <= maxPerGroup * #subscribedTeams
-sub_students= sum t: subscribedTeams | #t.members
-#ranking=sub_students
+	minPerGroup * #subscribedTeams <= sub_students
+	sub_students <= maxPerGroup * #subscribedTeams
+	sub_students= sum t: subscribedTeams | #t.members
+	#ranking=sub_students
 
-// The score must be an int between 0 and 100
-  all s: Student | ranking[s] >= 0 and ranking[s] <= 100
-	minPerGroup <= maxPerGroup
-	minPerGroup>=1
-	maxPerGroup<=sub_students
-	registrationDeadline.year <= submissionDeadline.year
-	(registrationDeadline.year = submissionDeadline.year) implies
-		(registrationDeadline.month <= submissionDeadline.month)
-	(registrationDeadline.year = submissionDeadline.year && registrationDeadline.month = submissionDeadline.month) implies
-		(registrationDeadline.day < submissionDeadline.day)
+	// The score must be an int between 0 and 100
+  	all s: Student | ranking[s] >= 0 and ranking[s] <= 100
+		minPerGroup <= maxPerGroup
+		minPerGroup>=1
+		maxPerGroup<=sub_students
+		registrationDeadline.year <= submissionDeadline.year
+		(registrationDeadline.year = submissionDeadline.year) implies
+			(registrationDeadline.month <= submissionDeadline.month)
+		(registrationDeadline.year = submissionDeadline.year && registrationDeadline.month = submissionDeadline.month) implies
+			(registrationDeadline.day < submissionDeadline.day)
 }
 
 //Tournaments have a creator and a set of managers, in particular the creator of a tournament must always be part of the managers
@@ -75,10 +75,9 @@ sig Tournament{
 	var status: one Status
 	var ranking : Student -> Int
 }{
-// To impose positivity to the score
+	// To impose positivity to the score
   	all s: Student | ranking[s] >= 0 	
 	creator in managers
-	
 }
 
 
@@ -88,7 +87,6 @@ sig Team{
 	members: some Student
 	battle: one Battle 
 	var solutions: set Solution
-	
 }
 
 //Teams provide solutions to the problems posed during battles, these solutions get automatically evaluated by the system
@@ -97,8 +95,8 @@ sig Solution{
 	battle: one Battle,
 	score: one Int
 }{
- score>=0,
- score<=100
+ 	score>=0
+	score<=100
 }
 
 //Represents the status of a battle or a tournament
@@ -126,89 +124,85 @@ pred closeBattle[b: Battle]{
 	b.status = Ongoing
 	b.status' = Closed
 }
-pred enrollStudent(student: Student, tournament: Tournament) {
- student not in tournament.students 
- tournament.students' = tournament.students + student
-	tournament.status = Created
-  tournament not in student.tournaments
- student.tournaments'=student.tournaments+tournament
-
+pred enrollStudent(s: Student, t: Tournament) {
+ 	s not in t.students 
+ 	t.students' = t.students + s
+	t.status = Created
+  	t not in s.tournaments
+ 	s.tournaments' = s.tournaments + t
 }
 
-pred TeamJoinsBattle[team: Team, battle: Battle] {
-    battle.status = Created
-    (all student: Student | student in team.members  implies student in battle.tournament.students) 
-    team not in battle.subscribedTeams 
-   battle.subscribedTeams'=battle.subscribedTeams+team
-    battle.sub_students'=battle.sub_students+#teams.members
-(all student: Student | student in team.members battle not in student.battles )
-(all student: Student | student in team.members implies student.battles'=student.battles+team.members )
-}
-pred AddManagerToTournament[newManager: Educator, tournament: Tournament] {
-    newManager not in tournament.managers
-    tournament.managers' = tournament.managers + newManager
-tournament not in newManager.tournamentsManaged
-newManager.tournamentsManaged'=newManager.tournamentsManaged+tournament
-
+pred TeamJoinsBattle[t: Team, b: Battle] {
+    	b.status = Created
+    	(all s: Student | s in t.members implies s in b.tournament.students) 
+    	t not in b.subscribedTeams 
+   	b.subscribedTeams' = b.subscribedTeams + t
+	b.sub_students' = b.sub_students + #t.members
+	(all s: Student | s in t.members implies b not in s.battles)
+	(all s: Student | s in t.members implies s.battles' = s.battles + t.members)
 }
 
-pred RemoveManagerFromTournament[managerToRemove: Educator, tournament: Tournament] {
-    managerToRemove in tournament.managers
-    tournament.managers' = tournament.managers - managerToRemove
-tournament  in managerToRemove.tournamentsManaged
-managerToRemove.tournamentsManaged'=managerToRemove.tournamentsManaged-tournament
+pred AddManagerToTournament[e: Educator, t: Tournament] {
+    	e not in t.managers
+    	t.managers' = t.managers + e
+	t not in e.tournamentsManaged
+	e.tournamentsManaged' = e.tournamentsManaged + t
+}
 
-    
+pred RemoveManagerFromTournament[e: Educator, t: Tournament] {
+    	e in t.managers
+    	t.managers' = t.managers - e
+	t in e.tournamentsManaged
+	e.tournamentsManaged' = e.tournamentsManaged - t
 }
 
 FACTS
 //A student can participate in a battle in only one team
 fact NoOverlappingTeams{
-all s1: Student, t1, t2: Team | 
-    (s1 in t1.members and s1 in t2.members and t1.battle = t2.battle ) implies t1 = t2
+	all s1: Student, t1, t2: Team | 
+    		(s1 in t1.members and s1 in t2.members and t1.battle = t2.battle) implies t1 = t2
 }
 
 fact UniqueTournamentNames {
-  all disj t1, t2: Tournament | t1.name != t2.name
+  	all disj t1, t2: Tournament | t1.name != t2.name
 }
 
 fact UniqueBattleNamesPerTournament {
-  all t: Tournament |
-    all disj b1, b2: Battle | b1, b2 in t.battles | b1.name != b2.name
+  	all t: Tournament | all disj b1, b2: Battle | 
+		b1, b2 in t.battles implies b1.name != b2.name
 }
 
-fact SolutionScoreRange {
-  all sol: Solution | sol.score >= 0 and sol.score <= 100
-}
 fact TeamMembershipLimit {
-  all t: Team | 
-      #t.members >= t.battle.minPerGroup and #t.members <= t.battle.maxPerGroup
+  	all t: Team | 
+      		#t.members >= t.battle.minPerGroup and #t.members <= t.battle.maxPerGroup
 }
 
 fact UsernamenUnicity{
-all disj u1, u2: User | u1.u_id!=u2_u_id and u1.email!=u2.email
+	all disj u1, u2: User | u1.u_id != u2_u_id and u1.email != u2.email
 }
 
 fact TeamCoherenceInBattleAndSolution{
-all disj b: Battle, s: Solution, t: Team| s.battle=b and s.team=t implies t in b.subscribedTeams and t.battle=b and s in t.solutions 
+	all disj b: Battle, s: Solution, t: Team | 
+		(s.battle = b and s.team = t) implies 
+			(t in b.subscribedTeams and t.battle = b and s in t.solutions)
 }
 
 fact teamSubscribedToTournament{
 	all s: Student, tm: Team, tr: Tournament | 
-		((s in tm.members) and (tm in tr.battles)) implies
+		(s in tm.members and tm in tr.battles) implies
 			(s in tr.students)
 }
 
 fact battleCreatorIsManager{
 	all e: Educator, b: Battle, t: Tournament |
-		((b.creator = e) and (b in t.battles)) implies
+		(b.creator = e and b in t.battles) implies
 			(e in t.managers)
 }
 
 fact educatorConsistency{
 	all e: Educator, t: Tournament |
 		(e = t.creator iff t in e.tournamentsCreated) and
-		(e in t.managers iff t in e.tournamentsManaged)
+			(e in t.managers iff t in e.tournamentsManaged)
 	all e: Educator, b:Battle |
 		(e = b.creator iff b in e.battlesCreated)
 }
@@ -228,8 +222,8 @@ fact StudentScoreInTournament {
             t.ranking[s] = sum b: t.battles | b.ranking[s] | b in s.battles
 }
 fact StudentsInTournamentsAndBattles{
-	all t: Tournament, b: Battle | b in t.battles| 
-	#t.students >= b.sub_students
+	all t: Tournament, b: Battle |
+		b in t.battles implies #t.students >= b.sub_students
 }
 
 fact tournamentStatus{
@@ -239,8 +233,8 @@ fact tournamentStatus{
 		(t.status = Created implies eventually t.status = Closed) and
 		(t.status = Ongoing implies once startTournament[t]) and
 		(t.status = Ongoing implies eventually t.status = Closed) and
-		(t.status = Closed implies once startTournament[t])
-		(t.status = Closed implies once closeTournament[t])
+		(t.status = Closed implies once startTournament[t]) and
+		(t.status = Closed implies once closeTournament[t]) and
 		(t.status = Closed implies after always t.status = Closed)
 }
 
@@ -251,8 +245,8 @@ fact battleStatus{
 		(b.status = Created implies eventually b.status = Closed) and
 		(b.status = Ongoing implies once startBattle[b]) and
 		(b.status = Ongoing implies eventually b.status = Closed) and
-		(b.status = Closed implies once startBattle[b])
-		(b.status = Closed implies once closeBattle[b])
+		(b.status = Closed implies once startBattle[b]) and
+		(b.status = Closed implies once closeBattle[b]) and
 		(b.status = Closed implies after always b.status = Closed)
 }
 
