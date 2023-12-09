@@ -1,3 +1,5 @@
+//SIGNATURES
+
 //Abstract signature for users
 abstract sig User {
 	u_id : one Int,
@@ -104,7 +106,7 @@ sig Solution{
 //Represents the status of a battle or a tournament
 enum Status {Created, Ongoing, Closed}
 
-PREDICATES
+//PREDICATES
 
 //An educator can create a tournament
 pred createTournament[e: Educator, t: Tournament]{
@@ -198,49 +200,59 @@ pred RemoveManagerFromTournament[e: Educator, t: Tournament] {
 	e.tournamentsManaged' = e.tournamentsManaged - t
 }
 
-FACTS
+//FACTS
+
 //A student can participate in a battle in only one team
 fact NoOverlappingTeams{
 	all s1: Student, t1, t2: Team | 
     		(s1 in t1.members and s1 in t2.members and t1.battle = t2.battle) implies t1 = t2
 }
 
+//There cannot be two tournaments with the same name
 fact UniqueTournamentNames {
   	all disj t1, t2: Tournament | t1.name != t2.name
 }
 
+//There cannot be two battles with the same name in a single tournament
 fact UniqueBattleNamesPerTournament {
   	all t: Tournament | all disj b1, b2: Battle | 
 		b1, b2 in t.battles implies b1.name != b2.name
 }
 
+//Every team taking part to a battle must have its number of members between the upper and lower bounds of the battle
 fact TeamMembershipLimit {
   	all t: Team | 
       		#t.members >= t.battle.minPerGroup and #t.members <= t.battle.maxPerGroup
 }
 
+//There cannot be two users with the same name
 fact UsernamenUnicity{
 	all disj u1, u2: User | u1.u_id != u2_u_id and u1.email != u2.email
 }
 
+//If a team presents a solution for a battle, that team must be part of the battle
 fact TeamCoherenceInBattleAndSolution{
 	all disj b: Battle, s: Solution, t: Team | 
 		(s.battle = b and s.team = t) implies 
 			(t in b.subscribedTeams and t.battle = b and s in t.solutions)
 }
 
+//If a student is part of a team and that team is subscribed to a battle belonging to a tournament, then the student must be subscribed to the tournament
 fact teamSubscribedToTournament{
 	all s: Student, tm: Team, tr: Tournament | 
-		(s in tm.members and tm in tr.battles) implies
+		(s in tm.members and tm.battle in tr.battles) implies
 			(s in tr.students)
 }
 
+//If an educator creates a battle for a tournament, it must be a manager of that tournament
 fact battleCreatorIsManager{
 	all e: Educator, b: Battle, t: Tournament |
 		(b.creator = e and b in t.battles) implies
 			(e in t.managers)
 }
 
+//1. An educator is the creator of a tournament if and only if the tournament is created by that educator
+//2. An educator is the creator of a battle if and only if the battle is created by that educator
 fact educatorConsistency{
 	all e: Educator, t: Tournament |
 		(e = t.creator iff t in e.tournamentsCreated) and
@@ -249,25 +261,32 @@ fact educatorConsistency{
 		(e = b.creator iff b in e.battlesCreated)
 }
 
+//1. A student is subscribed to a tournament if and only if that student is in the set of subscribed students of that tournament
+//2. A student is part of a team if and only if the student is in the members of that team
+//3. A student is subscribed to a battle if and only if the student is part of a team subscribed to that battle
 fact studentConsistency{
 	all s: Student, t: Tournament |
 		(s in t.students iff t in s.tournaments)
 	all s: Student, t: Team |
 		(s in t.members iff t in s.teams)
-	all s: Student, b: Battle, t: Team |
-		(b in s.battles iff (s in t.members and t in b.teams))
+	all s: Student, b: Battle|
+		(b in s.battles iff (one t: Team | s in t.members and t in b.teams))
 }
 
+//The score of a student in a tournament is the sum of the scores of that student in all the battles of the tournament
 fact StudentScoreInTournament {
     all t: Tournament, s: Student | 
         s in t.students implies 
             t.ranking[s] = sum b: t.battles | b.ranking[s] | b in s.battles
 }
+
+//A battle in a tournament must have a number of participants smaller or equal than the number of participants in the tournament
 fact StudentsInTournamentsAndBattles{
 	all t: Tournament, b: Battle |
 		b in t.battles implies #t.students >= b.sub_students
 }
 
+//Models the status evolution of a tournament
 fact tournamentStatus{
 	all t: Tournament |
 		(t.status = Created implies (once createTournament[t.creator, t])) and
@@ -281,6 +300,7 @@ fact tournamentStatus{
 		(t.status = Closed implies after always t.status = Closed)
 }
 
+//Models the status evolution of a battle
 fact battleStatus{
 	all b: Battles |
 		(b.status = Created implies (once createBattle[b.creator, b, b.tournament])) and
@@ -294,11 +314,13 @@ fact battleStatus{
 		(b.status = Closed implies after always b.status = Closed)
 }
 
+//If an educator is a manager of a tournament, then it must haave been granted the permission at some point in time
 fact managerOnceAdded{
 	all e: Educator, t: Tournament |
 		e in t.managers implies once AddManagerToTournament[e, t]
 }
 
+//If an educator is not a manager of a tournament, then either it was never granted the permission or the permission have been revoked at some point in time
 fact notManagerRemovedOrNeverAdded{
 	all e: Educator, t: Tournament |
 		e not in t.managers implies
@@ -306,11 +328,13 @@ fact notManagerRemovedOrNeverAdded{
 			 historically e not in t.managers)
 }
 
+//If a student is subscribed to a tournament, then it must have subscribed at some point in time
 fact studentOnceEnrolled{
 	all s: Student, t: Tournament |
 		s in t.students implies once enrollStudent[s, t]
 }
 
+//If a team is taking part in a battle, then it must have been subscribed at some point in time
 fact teamOnceSubscribed{
 	all t: Team, b: Battle |
 		t in b.subscribedTeams implies once teamJoinsBattle[t, b]
