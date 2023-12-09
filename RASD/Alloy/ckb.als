@@ -48,8 +48,8 @@ sig Battle{
 	var ranking : Student -> Int 
 }{
 	//this facts ensure consistency between the attributeds regarding the subscribed students
-	minPerGroup * #subscribedTeams <= sub_students
-	sub_students <= maxPerGroup * #subscribedTeams
+	mul[minPerGroup, #subscribedTeams] <= sub_students
+	sub_students <= mul[maxPerGroup, #subscribedTeams]
 	sub_students = sum t: subscribedTeams | #t.members
 	#ranking = sub_students
 	minPerGroup <= maxPerGroup
@@ -179,7 +179,7 @@ pred TeamJoinsBattle[t: Team, b: Battle] {
     	(all s: Student | s in t.members implies s in b.tournament.students) 
     	t not in b.subscribedTeams 
    	b.subscribedTeams' = b.subscribedTeams + t
-	b.sub_students' = b.sub_students + #t.members
+	b.sub_students' = plus[b.sub_students, #t.members]
 	(all s: Student | s in t.members implies b not in s.battles)
 	(all s: Student | s in t.members implies s.battles' = s.battles + t.members)
 }
