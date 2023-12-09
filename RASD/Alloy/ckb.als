@@ -17,7 +17,7 @@ sig Educator extends User{
 	var tournamentsCreated: set Tournament,
 	var tournamentsManaged: set Tournament
 }{
-	#tournamentsManaged>=#tournamentsCreated
+	#tournamentsManaged >= #tournamentsCreated
 }
 
 //Students can participate in tournaments and in battles through teams
@@ -27,7 +27,7 @@ sig Student extends User{
 	var teams: set Team
 	
 }{
-	#battles=#teams
+	#battles = #teams
 }
 
 
@@ -51,7 +51,7 @@ sig Battle{
 	sub_students = sum t: subscribedTeams | #t.members
 	#ranking = sub_students
 	minPerGroup <= maxPerGroup
-	maxPerGroup < =sub_students
+	maxPerGroup <= sub_students
 	minPerGroup >= 1
 
 	// The score must be an int between 0 and 100
@@ -97,8 +97,8 @@ sig Solution{
 	score: one Int
 }{
 	//scores are between 0 and 100
- 	score>=0
-	score<=100
+ 	score >= 0
+	score <= 100
 }
 
 //Represents the status of a battle or a tournament
