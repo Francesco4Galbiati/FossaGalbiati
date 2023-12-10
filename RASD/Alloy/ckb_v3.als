@@ -20,7 +20,6 @@ sig Battle{
 sig Tournament{
 	creator: one Educator,
 	var managers: some Educator,
-	var battles: set Battle,
 	var students: set Student,
 	var status: one Status,
 }{
@@ -63,22 +62,16 @@ fact usernameUnicity{
 
 //If a student is part of a team and that team is subscribed to a battle belonging to a tournament, then the student must be subscribed to the tournament
 fact teamSubscribedToTournament{
-	all s: Student, tm: Team, tr: Tournament | 
-		(s in tm.members and tm.battle in tr.battles) implies
+	all s: Student, tm: Team, tr: Tournament, b: Battle| 
+		(s in tm.members and tm in b.subscribedTeams and b.tournament = tr) implies
 			(s in tr.students)
 }
 
 //If an educator creates a battle for a tournament, it must be a manager of that tournament
 fact battleCreatorIsManager{
 	all e: Educator, b: Battle, t: Tournament |
-		(b.creator = e and b in t.battles) implies
+		(b.creator = e and b.tournament = t) implies
 			(e in t.managers)
-}
-
-//A battle can belong only to one tournament
-fact BattleTournamentConsistency{
-	all b: Battle, t: Tournament |
-		t = b.tournament iff b in t.battles
 }
 
 //A team can take part only in one battle
@@ -90,7 +83,7 @@ fact TeamBattleConsistency{
 //A tournament can be closed only when all its battles are closed
 fact closedTournamentWhenClosedBattles{
 	all t: Tournament |
-		t.status = Closed implies (all b: Battle | b in t.battles implies b.status = Closed)
+		t.status = Closed implies (all b: Battle | b.tournament = t implies b.status = Closed)
 }
 
 //If a team is subscribed to a battle, then all of its members are subscribed to the tournament of the battle
@@ -109,10 +102,46 @@ fact noSolutionForCreatedBattles{
 //If a tournament is in the Created status, then it cannot have any battle
 fact noBattleForCreatedTournament{
 	all t: Tournament |
-		t.status = Created implies t.battles = none
+		t.status = Created implies (no b: Battle | b.tournament = t)
+}
+
+//- Once a tournament is in the Ongoing state it can never return in the Created state
+//- Once a battle is in the Closed state it will always be in the Closed state
+//- Once a tournament is in the Ongoing state it can never return in the Created state
+//- Once a battle is in the Closed state it will always be in the Closed state
+fact statusConsistency{
+	all t: Tournament |
+		t.status = Ongoing implies always t.status != Created
+
+	all t: Tournament |
+		t.status = Closed implies always t.status = Closed
+
+	all b: Battle |
+		b.status = Ongoing implies always b.status != Created
+
+	all b: Battle |
+		b.status = Closed implies always b.status = Closed
+}
+
+//- Once a student has subscribed to a tournament, it will always be subscribed to that tournament
+//- Once a team has subscribed to a battle, it will always be subscribed to that battle
+fact onceSubscribedAlwaysSubscribed{
+	all s: Student, t: Tournament |
+		s in t.students implies always s in t.students
+
+	all t: Team, b: Battle |
+		t in b.subscribedTeams implies always t in b.subscribedTeams
+}
+
+//Starts a tournament
+pred startTournament[t: Tournament]{
+	t.status = Created
+	t.status' = Ongoing
 }
 
 pred show[]{}
+
+run startTournament
 
 run show for exactly 5 Student, 
 			 exactly 2 Educator,
