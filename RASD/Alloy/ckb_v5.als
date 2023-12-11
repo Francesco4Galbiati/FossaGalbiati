@@ -172,6 +172,7 @@ pred teamJoinsBattle[t: Team, b: Battle]{
 	(all s: Student | s in t.members implies s in b.tournament.students)
 	t not in b.subscribedTeams
 	b.subscribedTeams' = b.subscribedTeams + t
+	no t.battle
 }
 
 //Grants managing permissions to an educator
