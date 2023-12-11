@@ -191,7 +191,12 @@ pred removeManager[e: Educator, t: Tournament]{
 	t.managers' = t.managers - e
 }
 
-pred show[]{}
+pred show[]{
+	all t: Tournament | #t.students >= 2
+	one t: Tournament | t.status = Created
+	one b: Battle | b.status = Created
+	all t: Team | (some s: Solution | s.team = t)
+}
 
 run show for exactly 5 Student, 
 			 exactly 2 Educator,
